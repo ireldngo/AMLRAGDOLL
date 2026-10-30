@@ -1,0 +1,41 @@
+
+name: Build AMLRagdoll ARM64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Android NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager "ndk;27.2.12479018"
+
+      - name: Extract project
+        run: |
+          mkdir project
+          unzip -q AMLRagdoll3_Project_fixed.zip -d project
+
+      - name: Compile ARM64
+        run: |
+          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018
+          $ANDROID_NDK_HOME/ndk-build \
+            NDK_PROJECT_PATH=$PWD/project \
+            APP_BUILD_SCRIPT=$PWD/project/Android.mk \
+            NDK_APPLICATION_MK=$PWD/project/Application.mk
+
+      - name: Upload SO
+        uses: actions/upload-artifact@v4
+        with:
+          name: AMLRagdoll-ARM64
+          path: project/libs/arm64-v8a/*.so
+          
