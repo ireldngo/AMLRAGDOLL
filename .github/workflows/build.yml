@@ -8,32 +8,34 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Android NDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK
-        run: sdkmanager "ndk;27.2.12479018"
+      - name: Find installed Android NDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/ndk"
+          NDK_DIR=$(find "$ANDROID_HOME/ndk" \
+            -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          echo "NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
 
       - name: Extract project
         run: |
           mkdir project
           unzip -q AMLRagdoll3_Project_fixed.zip -d project
 
-      - name: Compile ARM64
+      - name: Build ARM64
         run: |
-          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018
-          $ANDROID_NDK_HOME/ndk-build \
-            NDK_PROJECT_PATH=$PWD/project \
-            APP_BUILD_SCRIPT=$PWD/project/Android.mk \
-            NDK_APPLICATION_MK=$PWD/project/Application.mk
+          cd project
+          "$NDK_HOME/ndk-build" \
+            NDK_PROJECT_PATH=. \
+            APP_BUILD_SCRIPT=Android.mk \
+            NDK_APPLICATION_MK=Application.mk
 
-      - name: Upload SO
+      - name: Upload plugin
         uses: actions/upload-artifact@v4
         with:
           name: AMLRagdoll-ARM64
